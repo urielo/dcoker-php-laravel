@@ -1,0 +1,9 @@
+[program:laravel-horizon]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/html_landing/artisan horizon
+autostart=true
+autorestart=true
+numprocs=1
+user=root
+redirect_stderr=true
+stopwaitsecs=3600
