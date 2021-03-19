@@ -1,0 +1,95 @@
+version: "3.2"
+services:
+  php:
+    container_name: castlight-php
+    build:
+      dockerfile: ./Dockerfile.dev
+      context: ./docker/php
+    volumes:
+      - ${BACKEND_PATH_QA}:/var/www/html/qa
+      - ${BACKEND_PATH_HGM}:/var/www/html/hmg
+      - ./docker/php/config/supervisor/conf.d/:/etc/supervisor/conf.d
+      - composer:/root/.composer/cache/
+    working_dir: /var/www/html
+    links:
+      - redis
+      - database
+    depends_on:
+      - redis
+      - database
+  frontend_qa:
+    container_name: castlight-qa-frontend
+    build:
+      context: ${FRONTEND_PATH_QA}
+      dockerfile: ../../docker/node/Dockerfile
+  frontend_hgm:
+    container_name: castlight-hmg-frontend
+    build:
+      context: ${FRONTEND_PATH_QA}
+      dockerfile: ../../docker/node/Dockerfile
+  nginx:
+    container_name: castlight-nginx
+    image: "nginx:alpine"
+    volumes:
+      - ${BACKEND_PATH}:/var/www/html
+      - "./docker/nginx/conf.d:/etc/nginx/conf.d"
+      - "./docker/nginx/ssl:/etc/nginx/ssl"
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+    working_dir: /var/www/html
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - php
+      - frontend
+
+  certbot:
+    image: certbot/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    volumes:
+      - ./docker/certbot/conf:/etc/letsencrypt
+      - ./docker/certbot/www:/var/www/certbot
+
+  redis:
+    container_name: castlight-redis
+    image: redis:alpine
+
+  database:
+    image: mysql:5
+    container_name: castlight-database
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - "mysql5:/var/lib/mysql"
+    ports:
+      - "3306:3306"
+
+  mailhog:
+    container_name: castlight-mailhog
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  influxdb:
+    container_name: castlight-influx
+    image: influxdb:1.8-alpine
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb:/var/lib/influxdb
+    environment:
+      - INFLUXDB_DB=${INFLUXDB_DB}
+      - INFLUXDB_USER=${INFLUXDB_USER}
+      - INFLUXDB_PASSWORD=${INFLUXDB_PASSWORD}
+      - INFLUXDB_ADMIN_USER=${INFLUXDB_ADMIN_USER}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+
+volumes:
+  mysql5: {}
+  influxdb: {}
+  composer: {}
