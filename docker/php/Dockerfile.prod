@@ -1,0 +1,57 @@
+FROM php:7.4-fpm-alpine
+
+RUN apk --update --no-cache add \
+        wget \
+        curl \
+        git \
+        supervisor \
+        libjpeg-turbo-dev \
+        jpeg-dev \
+        libpng-dev \
+        curl-dev \
+        autoconf \
+        g++ \
+        make \
+        libzip-dev \
+    && rm -rf /var/cache/apk/* \
+    \
+    && docker-php-ext-configure gd \
+        --with-jpeg \
+        > /dev/null \
+    \
+    && docker-php-ext-install \
+        -j$(nproc) \
+        gd \
+        fileinfo \
+        curl \
+        bcmath \
+        tokenizer \
+        pcntl \
+        ctype \
+        zip \
+        pdo \
+        pdo_mysql \
+        > /dev/null \
+    \
+    && pecl install redis \
+        && docker-php-ext-enable redis \
+        > /dev/null \
+    \
+    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer \
+    \
+    && apk del --no-cache --no-network \
+        g++ \
+        make \
+        wget \
+        curl-dev \
+        autoconf \
+        ca-certificates \
+        libjpeg-turbo-dev \
+    && pecl clear-cache \
+    && docker-php-source delete
+
+COPY ./config/supervisor/ /etc/supervisor/
+
+WORKDIR /var/www/html_landing
+
+CMD supervisord -c /etc/supervisor/supervisord.conf
