@@ -2,9 +2,11 @@ FROM node:12-alpine
 
 RUN mkdir app
 WORKDIR app/
-COPY . .
+
+COPY ./package.json package.json 
 RUN yarn install
 
+COPY . .
 RUN yarn build
 
 
