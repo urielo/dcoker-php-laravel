@@ -1,5 +1,7 @@
 version: "3.2"
 services:
+
+########### BACKEND  ##########################################################
   php:
     container_name: castlight-php
     build:
@@ -17,16 +19,21 @@ services:
     depends_on:
       - redis
       - database
+
+########### FRONTEND ##########################################################
   frontend_qa:
     container_name: castlight-qa-frontend
     build:
       context: ${FRONTEND_PATH_QA}
       dockerfile: ../../docker/node/Dockerfile
-  frontend_hgm:
+
+  frontend_hmg:
     container_name: castlight-hmg-frontend
     build:
-      context: ${FRONTEND_PATH_QA}
+      context: ${FRONTEND_PATH_HMG}
       dockerfile: ../../docker/node/Dockerfile
+
+########### WEBSERVICE  ##########################################################
   nginx:
     container_name: castlight-nginx
     image: "nginx:alpine"
@@ -42,7 +49,8 @@ services:
       - "443:443"
     depends_on:
       - php
-      - frontend
+      - frontend_qa
+      - frontend_hmg
 
   certbot:
     image: certbot/certbot
@@ -51,6 +59,7 @@ services:
       - ./docker/certbot/conf:/etc/letsencrypt
       - ./docker/certbot/www:/var/www/certbot
 
+########### DATABASES  ##########################################################
   redis:
     container_name: castlight-redis
     image: redis:alpine
@@ -64,16 +73,10 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - "mysql5:/var/lib/mysql"
+      - "mysql:/var/lib/mysql"
     ports:
       - "3306:3306"
 
-  mailhog:
-    container_name: castlight-mailhog
-    image: mailhog/mailhog:latest
-    ports:
-      - "1025:1025"
-      - "8025:8025"
 
   influxdb:
     container_name: castlight-influx
@@ -89,7 +92,15 @@ services:
       - INFLUXDB_ADMIN_USER=${INFLUXDB_ADMIN_USER}
       - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
 
+########### EMAIL  ##########################################################
+  mailhog:
+    container_name: castlight-mailhog
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
-  mysql5: {}
+  mysql: {}
   influxdb: {}
   composer: {}
