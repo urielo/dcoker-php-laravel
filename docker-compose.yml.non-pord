@@ -38,7 +38,8 @@ services:
     container_name: castlight-nginx
     image: "nginx:alpine"
     volumes:
-      - ${BACKEND_PATH}:/var/www/html
+      - ${BACKEND_PATH_QA}:/var/www/html/qa
+      - ${BACKEND_PATH_HGM}:/var/www/html/hmg
       - "./docker/nginx/conf.d:/etc/nginx/conf.d"
       - "./docker/nginx/ssl:/etc/nginx/ssl"
       - ./data/certbot/conf:/etc/letsencrypt
@@ -49,6 +50,9 @@ services:
       - "443:443"
     depends_on:
       - php
+      - frontend_qa
+      - frontend_hmg
+    links:
       - frontend_qa
       - frontend_hmg
 
